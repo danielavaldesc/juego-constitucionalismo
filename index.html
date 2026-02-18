@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Constitucionalismo y derechos en Colombia (1991) — Juego</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background:#f6f7fb; color:#111; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 24px; }
+    .card { background:#fff; border-radius: 16px; padding: 20px; box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+    h1 { font-size: 22px; margin: 0 0 6px; }
+    .sub { opacity: .75; margin: 0 0 16px; }
+    .topbar { display:flex; gap: 12px; flex-wrap: wrap; align-items:center; justify-content: space-between; margin-bottom: 14px; }
+    .pill { background:#eef2ff; padding: 6px 10px; border-radius: 999px; font-size: 13px; }
+    .q { font-size: 18px; margin: 12px 0 12px; }
+    .opts { display:grid; gap: 10px; margin: 10px 0 14px; }
+    button.opt {
+      text-align:left; padding: 12px 12px; border-radius: 12px;
+      border: 1px solid #e6e8f0; background:#fff; cursor:pointer;
+      transition: transform .02s ease, background .2s ease, border-color .2s ease;
+      font-size: 15px;
+    }
+    button.opt:hover { background:#fafbff; border-color:#cfd6ff; }
+    button.opt:disabled { cursor:not-allowed; opacity:.85; }
+    .feedback { padding: 12px; border-radius: 12px; margin-top: 10px; display:none; }
+    .ok { background:#ecfdf3; border:1px solid #b7f0cc; }
+    .bad { background:#fff1f2; border:1px solid #fecdd3; }
+    .explain { margin-top: 6px; opacity:.9; }
+    .actions { display:flex; gap: 10px; justify-content: space-between; margin-top: 14px; flex-wrap: wrap; }
+    .btn {
+      padding: 10px 14px; border-radius: 12px; border: 1px solid #e6e8f0;
+      background:#111; color:#fff; cursor:pointer; font-size: 14px;
+    }
+    .btn.secondary { background:#fff; color:#111; }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    .footer { margin-top: 14px; font-size: 12px; opacity:.7; }
+    .smalllink { font-size: 13px; opacity:.85; }
+    a { color: #2b59ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card" id="app">
+      <div id="screen-intro">
+        <h1>Constitucionalismo y derechos en Colombia</h1>
+        <p class="sub">Una mirada desde la Constitución Política de 1991 — Juego interactivo (Fase 1: Interpretación)</p>
+        <p class="smalllink">
+          Sugerencia: al final podrás copiar el puntaje.
+        </p>
+        <div class="actions" style="justify-content:flex-start">
+          <button class="btn" id="startBtn">Empezar</button>
+          <button class="btn secondary" id="shuffleBtn" title="Mezcla el orden de preguntas">Mezclar preguntas</button>
+        </div>
+        <div class="footer">
+          Requisito típico: mínimo 7 preguntas y breve explicación por respuesta.
+        </div>
+      </div>
+
+      <div id="screen-quiz" style="display:none">
+        <div class="topbar">
+          <div class="pill" id="progressPill">Pregunta 1/7</div>
+          <div class="pill" id="scorePill">Puntaje: 0</div>
+        </div>
+
+        <div class="q" id="questionText"></div>
+        <div class="opts" id="optionsWrap"></div>
+
+        <div class="feedback" id="feedbackBox">
+          <div id="feedbackTitle" style="font-weight:700"></div>
+          <div class="explain" id="feedbackExplain"></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn secondary" id="restartBtn">Reiniciar</button>
+          <button class="btn" id="nextBtn" disabled>Siguiente</button>
+        </div>
+      </div>
+
+      <div id="screen-result" style="display:none">
+        <h1>¡Listo!</h1>
+        <p class="sub" id="resultLine"></p>
+        <div class="actions" style="justify-content:flex-start">
+          <button class="btn" id="playAgainBtn">Jugar de nuevo</button>
+          <button class="btn secondary" id="copyBtn">Copiar resultado</button>
+        </div>
+        <div class="footer" id="copyHint" style="display:none">Copiado ✅</div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+  // Preguntas (basadas en el material ya redactado en el documento de tu mamá)
+  const QUESTIONS_BASE = [
+    {
+      q: "¿Qué se entiende por constitucionalismo?",
+      opts: [
+        { t: "A. La simple existencia de una Constitución", ok: false },
+        { t: "B. La limitación del poder mediante normas superiores", ok: true },
+        { t: "C. El poder absoluto del Ejecutivo", ok: false },
+        { t: "D. El gobierno exclusivo del Congreso", ok: false }
+      ],
+      explain: "El constitucionalismo busca limitar el poder y proteger derechos mediante normas superiores."
+    },
+    {
+      q: "¿Por qué la Constitución de 1991 es considerada garantista?",
+      opts: [
+        { t: "A. Eliminó los derechos colectivos", ok: false },
+        { t: "B. Fortaleció solo al Ejecutivo", ok: false },
+        { t: "C. Amplió derechos y creó mecanismos de protección", ok: true },
+        { t: "D. Redujo la participación ciudadana", ok: false }
+      ],
+      explain: "Amplió derechos fundamentales y fortaleció mecanismos como la acción de tutela."
+    },
+    {
+      q: "¿Cuál es la función principal de la acción de tutela?",
+      opts: [
+        { t: "A. Reformar la Constitución", ok: false },
+        { t: "B. Proteger de forma inmediata los derechos fundamentales", ok: true },
+        { t: "C. Controlar al Congreso", ok: false },
+        { t: "D. Sancionar penalmente funcionarios", ok: false }
+      ],
+      explain: "La tutela protege de forma inmediata derechos fundamentales cuando estén amenazados o vulnerados."
+    },
+    {
+      q: "¿Qué principio sitúa a la persona como eje del orden constitucional?",
+      opts: [
+        { t: "A. Legalidad", ok: false },
+        { t: "B. Dignidad humana", ok: true },
+        { t: "C. Jerarquía normativa", ok: false },
+        { t: "D. Soberanía territorial", ok: false }
+      ],
+      explain: "La dignidad humana es un eje central del Estado social de derecho y del orden constitucional de 1991."
+    },
+    {
+      q: "La democracia constitucional se caracteriza por:",
+      opts: [
+        { t: "A. Poder absoluto de la mayoría", ok: false },
+        { t: "B. Ausencia de controles", ok: false },
+        { t: "C. Participación ciudadana con límites al poder", ok: true },
+        { t: "D. Eliminación de jueces", ok: false }
+      ],
+      explain: "Combina participación democrática con límites y controles para evitar abusos de poder."
+    },
+    {
+      q: "Un valor constitucional esencial en la Constitución de 1991 es:",
+      opts: [
+        { t: "A. Exclusión", ok: false },
+        { t: "B. Autoritarismo", ok: false },
+        { t: "C. Justicia", ok: true },
+        { t: "D. Desigualdad", ok: false }
+      ],
+      explain: "La justicia aparece como valor constitucional y como finalidad del Estado social de derecho."
+    },
+    {
+      q: "El principal reto del constitucionalismo colombiano es:",
+      opts: [
+        { t: "A. Reformar toda la Constitución", ok: false },
+        { t: "B. Garantizar la aplicación real de los derechos", ok: true },
+        { t: "C. Eliminar la Corte Constitucional", ok: false },
+        { t: "D. Reducir la participación ciudadana", ok: false }
+      ],
+      explain: "El desafío clave es hacer efectivos los derechos en la práctica, no solo reconocerlos en el texto."
+    }
+  ];
+
+  let QUESTIONS = [];
+  let idx = 0;
+  let score = 0;
+  let answered = false;
+
+  const el = (id) => document.getElementById(id);
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function resetGame() {
+    idx = 0;
+    score = 0;
+    answered = false;
+    el("scorePill").textContent = `Puntaje: ${score}`;
+    showScreen("quiz");
+    renderQuestion();
+  }
+
+  function showScreen(name) {
+    el("screen-intro").style.display = name === "intro" ? "block" : "none";
+    el("screen-quiz").style.display  = name === "quiz"  ? "block" : "none";
+    el("screen-result").style.display= name === "result"? "block" : "none";
+  }
+
+  function renderQuestion() {
+    answered = false;
+    el("nextBtn").disabled = true;
+    el("feedbackBox").style.display = "none";
+
+    const q = QUESTIONS[idx];
+    el("progressPill").textContent = `Pregunta ${idx + 1}/${QUESTIONS.length}`;
+    el("questionText").textContent = q.q;
+
+    const wrap = el("optionsWrap");
+    wrap.innerHTML = "";
+
+    q.opts.forEach((opt, i) => {
+      const b = document.createElement("button");
+      b.className = "opt";
+      b.textContent = opt.t;
+      b.onclick = () => chooseAnswer(i);
+      wrap.appendChild(b);
+    });
+  }
+
+  function chooseAnswer(i) {
+    if (answered) return;
+    answered = true;
+
+    const q = QUESTIONS[idx];
+    const isOk = q.opts[i].ok;
+
+    const buttons = Array.from(el("optionsWrap").querySelectorAll("button.opt"));
+    buttons.forEach((b, k) => {
+      b.disabled = true;
+      if (q.opts[k].ok) b.style.borderColor = "#16a34a";
+      if (k === i && !q.opts[k].ok) b.style.borderColor = "#e11d48";
+    });
+
+    if (isOk) score += 1;
+    el("scorePill").textContent = `Puntaje: ${score}`;
+
+    el("feedbackBox").style.display = "block";
+    el("feedbackBox").className = "feedback " + (isOk ? "ok" : "bad");
+    el("feedbackTitle").textContent = isOk ? "✅ Correcto" : "❌ Incorrecto";
+    el("feedbackExplain").textContent = q.explain;
+
+    el("nextBtn").disabled = false;
+  }
+
+  function next() {
+    idx += 1;
+    if (idx >= QUESTIONS.length) {
+      showResult();
+    } else {
+      renderQuestion();
+    }
+  }
+
+  function showResult() {
+    showScreen("result");
+    const total = QUESTIONS.length;
+    const pct = Math.round((score / total) * 100);
+    el("resultLine").textContent = `Tu puntaje fue ${score}/${total} (${pct}%).`;
+  }
+
+  // UI eventos
+  el("startBtn").onclick = () => {
+    QUESTIONS = structuredClone(QUESTIONS_BASE);
+    showScreen("quiz");
+    resetGame();
+  };
+
+  el("shuffleBtn").onclick = () => {
+    QUESTIONS = shuffle(structuredClone(QUESTIONS_BASE));
+    showScreen("quiz");
+    resetGame();
+  };
+
+  el("nextBtn").onclick = next;
+  el("restartBtn").onclick = () => {
+    QUESTIONS = structuredClone(QUESTIONS_BASE);
+    resetGame();
+  };
+
+  el("playAgainBtn").onclick = () => {
+    QUESTIONS = structuredClone(QUESTIONS_BASE);
+    resetGame();
+  };
+
+  el("copyBtn").onclick = async () => {
+    const total = QUESTIONS.length;
+    const pct = Math.round((score / total) * 100);
+    const text = `Resultado juego (Constitucionalismo y derechos 1991): ${score}/${total} (${pct}%).`;
+    try {
+      await navigator.clipboard.writeText(text);
+      el("copyHint").style.display = "block";
+      setTimeout(() => el("copyHint").style.display = "none", 1200);
+    } catch(e) {
+      alert("No se pudo copiar automáticamente. Copia manual: " + text);
+    }
+  };
+</script>
+</body>
+</html>
